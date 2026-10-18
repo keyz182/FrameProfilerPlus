@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>FrameProfilerPlus</RootNamespace>
+		<AssemblyName>FrameProfilerPlus</AssemblyName>
+		<OutDir>..\1.7\Assemblies\</OutDir>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<DebugType>none</DebugType>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<!-- Game root (Mods/FrameProfilerPlus/Source -> RimWorld). -->
+		<RimWorld17 Condition="'$(RimWorld17)' == ''">..\..\..</RimWorld17>
+		<!-- Harmony mod 1.7 build. Compile against the copy that runs; never ship it. -->
+		<HarmonyDir Condition="'$(HarmonyDir)' == ''">$(RimWorld17)\..\..\workshop\content\294100\2009463077\1.7\Assemblies</HarmonyDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="0Harmony"><HintPath>$(HarmonyDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+		<Reference Include="Assembly-CSharp"><HintPath>$(RimWorld17)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+		<Reference Include="UnityStubs"><HintPath>$(RimWorld17)\UnityStubs.dll</HintPath><Private>false</Private></Reference>
+		<Reference Include="Waylith"><HintPath>$(RimWorld17)\Waylith.dll</HintPath><Private>false</Private></Reference>
+	</ItemGroup>
+</Project>

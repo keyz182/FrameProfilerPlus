@@ -1,0 +1,7 @@
+Source/obj/
+Source/bin/
+Tests/obj/
+Tests/bin/
+*.user
+.vs/
+.idea/
