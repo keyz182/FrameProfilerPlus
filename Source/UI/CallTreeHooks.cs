@@ -1,19 +1,23 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
+using FrameProfilerPlus.Core;
 using HarmonyLib;
 using Verse;
 using Verse.ProfilerUI;
+using Waylith.Profiling;
 
 namespace FrameProfilerPlus.UI
 {
-    // Fills the call tree's Detail column with time and calls per tick over the selected frames.
-    // Row totals are averages per frame, so dividing by the average ticks per frame gives per-tick figures.
-    // Only meaningful for simulation code; frame-rate code runs regardless of ticks.
+    // Fills the call tree's Detail column: the owning mod of our scopes, then time and calls per tick over the
+    // selected frames. Row totals are averages per frame, so dividing by the average ticks per frame gives
+    // per-tick figures. Only meaningful for simulation code; frame-rate code runs regardless of ticks.
     [HarmonyPatch(typeof(ProfilerCallTreeTable), MethodType.Constructor, typeof(ProfilerSession))]
     public static class CallTreeDetailHeader
     {
-        public static void Postfix(ProfilerCallTreeTable __instance) => __instance.View.DetailHeader = "per tick (sim only)";
+        public static void Postfix(ProfilerCallTreeTable __instance) => __instance.View.DetailHeader = "mod · per tick (sim only)";
     }
 
     [HarmonyPatch(typeof(ProfilerCallTreeTable), nameof(ProfilerCallTreeTable.Refresh))]
@@ -41,10 +45,19 @@ namespace FrameProfilerPlus.UI
     {
         public static void Postfix(ProfilerTreeModel.Row row, ProfilerRowData data)
         {
+            var owner = row.labelId.IsValid ? Owners(row.labelId.Value) : null;
             var ticks = CallTreeTicksPerFrame.TicksPerFrame;
-            data.Detail = ticks > 0f
-                ? $"{row.totalMicroseconds / ticks / 1000f:F3} ms · {row.calls / ticks:F1} calls"
-                : "";
+            var perTick = ticks > 0f ? $"{row.totalMicroseconds / ticks / 1000f:F3} ms · {row.calls / ticks:F1} calls" : "";
+            data.Detail = owner == null ? perTick : $"{owner} · {perTick}";
+        }
+
+        internal static string Owners(int labelId)
+        {
+            var slots = ScopeRuntime.Registry?.SlotsForLabel(labelId);
+            if (slots == null || slots.Count == 0)
+                return null;
+            var owners = slots.Select(s => s.Owner).Distinct().ToList();
+            return owners.Count == 1 ? owners[0] : $"{owners.Count} mods";
         }
     }
 
@@ -69,17 +82,70 @@ namespace FrameProfilerPlus.UI
                 yield return code;
             }
             if (!found)
-                Log.Warning("[FrameProfilerPlus] Profiler context menu not found; row actions are unavailable.");
+                FrameProfilerPlusMod.Warn("Profiler context menu not found; row actions are unavailable.");
         }
 
         public static List<FloatMenuOption> Extend(List<FloatMenuOption> options, ProfilerRowSection section)
         {
-            var index = section.View.SelectedIndex;
-            if (index < 0 || index >= section.View.Rows.Count)
-                return options;
-            var label = section.View.Rows[index].Label;
-            options.Add(new FloatMenuOption("Frame Profiler Plus: log label", () => Log.Message($"[FrameProfilerPlus] Selected row: {label}")));
+            var originals = OriginalsFor(section.View.Rows, section.View.SelectedIndex);
+            if (originals.Count > 0)
+                options.Add(new FloatMenuOption("Show Harmony patches", () => Find.WindowStack.Add(new Dialog_MessageBox(Describe(originals)))));
             return options;
+        }
+
+        // P: and X: rows name their method. An H: patch can serve several methods, so use its parent P: row.
+        private static List<MethodBase> OriginalsFor(List<ProfilerRowData> rows, int index)
+        {
+            if (index < 0 || index >= rows.Count || ScopeRuntime.Registry == null)
+                return new List<MethodBase>();
+            var row = rows[index];
+            if (row.Label.StartsWith("H:"))
+            {
+                for (var i = index - 1; i >= 0; i--)
+                {
+                    if (rows[i].Depth < row.Depth)
+                        return rows[i].Label.StartsWith("P:") ? OriginalsFor(rows, i) : SlotOriginals(row.Label);
+                }
+            }
+            return row.Label.StartsWith("P:") || row.Label.StartsWith("X:") || row.Label.StartsWith("H:")
+                ? SlotOriginals(row.Label)
+                : new List<MethodBase>();
+        }
+
+        private static List<MethodBase> SlotOriginals(string label) =>
+            ScopeRuntime.Registry.SlotsForLabel(FrameProfiler.GetOrCreateLabelId(label).Value)
+                .SelectMany(s => s.Originals).Distinct().ToList();
+
+        private static string Describe(List<MethodBase> originals)
+        {
+            var text = new StringBuilder();
+            foreach (var original in originals.Take(5))
+            {
+                text.AppendLine(original.FullDescription());
+                var info = Harmony.GetPatchInfo(original);
+                if (info == null)
+                {
+                    text.AppendLine("  not patched");
+                    continue;
+                }
+                Append(text, "prefix", info.Prefixes);
+                Append(text, "postfix", info.Postfixes);
+                Append(text, "finalizer", info.Finalizers);
+                Append(text, "transpiler", info.Transpilers);
+                text.AppendLine();
+            }
+            if (originals.Count > 5)
+                text.AppendLine($"... and {originals.Count - 5} more methods.");
+            return text.ToString();
+        }
+
+        private static void Append(StringBuilder text, string kind, IEnumerable<Patch> patches)
+        {
+            foreach (var patch in patches.OrderByDescending(p => p.priority))
+            {
+                var method = patch.PatchMethod;
+                text.AppendLine($"  {kind}: {ModResolver.ModName(method.DeclaringType?.Assembly)} ({patch.owner}) {method.DeclaringType?.Name}.{method.Name}, priority {patch.priority}");
+            }
         }
     }
 }

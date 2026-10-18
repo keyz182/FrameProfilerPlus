@@ -18,6 +18,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="FrameProfilerPlus.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Reference Include="0Harmony"><HintPath>$(HarmonyDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
 		<Reference Include="Assembly-CSharp"><HintPath>$(RimWorld17)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
 		<Reference Include="UnityStubs"><HintPath>$(RimWorld17)\UnityStubs.dll</HintPath><Private>false</Private></Reference>
