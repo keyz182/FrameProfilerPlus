@@ -5,3 +5,5 @@ Tests/bin/
 *.user
 .vs/
 .idea/
+TestMod/Source/obj/
+TestMod/Source/bin/

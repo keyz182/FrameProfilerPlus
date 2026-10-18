@@ -1,0 +1,98 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using HarmonyLib;
+using Verse;
+
+namespace FrameProfilerPlus.TestMod
+{
+    // Known patches and workloads for in-game checks of Frame Profiler Plus. Development only.
+    public class TestModMain : Mod
+    {
+        public TestModMain(ModContentPack content) : base(content)
+        {
+            new Harmony("keyz.frameprofilerplus.testmod").PatchAll(typeof(TestModMain).Assembly);
+            Log.Message("[FrameProfilerPlus.TestMod] Loaded.");
+        }
+    }
+
+    [HarmonyPatch(typeof(TickManager), nameof(TickManager.DoSingleTick))]
+    public static class DoSingleTickPatches
+    {
+        public static bool Prefix()
+        {
+            Workload.Run();
+            return true;
+        }
+
+        public static void Postfix() => Workload.Spin(2000);
+    }
+
+    // Passthrough postfix: the original's result is on the stack around the patch call.
+    [HarmonyPatch(typeof(TickManager), nameof(TickManager.TickRateMultiplier), MethodType.Getter)]
+    public static class TickRatePassthrough
+    {
+        public static float Postfix(float result)
+        {
+            Workload.Spin(500);
+            return result;
+        }
+    }
+
+    // Set ThrowOnce from the REPL to check that an exception in a patch does not leave a scope open.
+    [HarmonyPatch(typeof(Map), nameof(Map.MapUpdate))]
+    public static class MapUpdateThrow
+    {
+        public static bool ThrowOnce;
+
+        public static void Prefix()
+        {
+            if (!ThrowOnce)
+                return;
+            ThrowOnce = false;
+            throw new InvalidOperationException("[FrameProfilerPlus.TestMod] deliberate prefix exception");
+        }
+    }
+
+    // Coverage targets the vanilla instrumenter skips: a constructor, a closure and an iterator.
+    public static class Workload
+    {
+        public static int Sink;
+        private static readonly List<int> Items = Enumerable.Range(0, 256).ToList();
+
+        // Plain unchecked loops: Enumerable.Sum is checked and Sink wraps on purpose.
+        public static void Run()
+        {
+            var total = new HeavyCtor(4000).Value;
+            foreach (var n in Numbers(256))
+                total += n;
+            var factor = (Sink & 3) + 1;
+            foreach (var x in Items.Select(x => x * factor))
+                total += x;
+            Sink = total;
+        }
+
+        public static IEnumerable<int> Numbers(int count)
+        {
+            for (var i = 0; i < count; i++)
+                yield return i ^ Sink;
+        }
+
+        public static void Spin(int iterations)
+        {
+            for (var i = 0; i < iterations; i++)
+                Sink = Sink * 31 + i;
+        }
+    }
+
+    public sealed class HeavyCtor
+    {
+        public readonly int Value;
+
+        public HeavyCtor(int iterations)
+        {
+            for (var i = 0; i < iterations; i++)
+                Value += i * i;
+        }
+    }
+}
