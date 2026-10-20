@@ -39,7 +39,7 @@ Open Options, Mod settings, Frame Profiler Plus.
 
 ## How to use it
 
-1. Start capture in the profiler window. Let the game run unpaused.
+1. Open the profiler window. It captures while it is open. Let the game run unpaused.
 2. Open the Patches tab to see each mod's patch time, with its patches below it.
 3. Open the Coverage tab to time more methods. Write one target per line, for example `MyMod!MyMod.Foo::Bar`. Use `-` at the start of a line to exclude. Press Preview, then Apply.
 4. Open the Groups tab to see tick time per group. Right-click a group row, then choose "Jump to worst frame". The profiler selects that frame.
