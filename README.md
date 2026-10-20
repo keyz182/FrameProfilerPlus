@@ -89,6 +89,41 @@ dotnet test
 
 Always start the game for tests with `-savedatafolder=<a scratch folder>`. RimWorld 1.7 resets `ModsConfig.xml`, so do not point it at your real save-data folder.
 
+## Releasing
+
+Releases use [cocogitto](https://docs.cocogitto.io/) (`cog`). Commit messages follow the conventional commit format, and `cog` picks the next version from them.
+
+You need `cog` (tested with 7.0.0), the .NET SDK and the game's DLLs. The build needs the game's DLLs, so a CI runner cannot build the mod. `cog` builds the DLL on your machine and commits it.
+
+Run the release in your own terminal. `cog` signs its commit and tag with your git signing key.
+
+1. Check out `main` with a clean working tree. Untracked files count as changes.
+2. For the first release, run `cog bump --version 1.0.0`. For later releases, run `cog bump --auto`.
+3. `cog` writes `CHANGELOG.md`. It then runs these checks. Any failure stops the release before the commit.
+   1. The working tree is clean.
+   2. The tests pass.
+   3. A Release build runs, and the version is stamped into the DLL.
+   4. The version is written to `modVersion` in `About/About.xml`.
+   5. `scripts/verify-release.sh` checks that the DLL to ship is identical to the Release build output, and that `modVersion` and `LICENSE` are right.
+4. `cog` makes one commit, `chore(version): vX.Y.Z`, with the DLL, `About.xml` and `CHANGELOG.md`. It tags that commit.
+5. Run `git show --stat HEAD`. It must list only those three files.
+6. Optional: run `sh scripts/package.sh X.Y.Z`, then `sh scripts/check-zip.sh dist/FrameProfilerPlus-vX.Y.Z.zip`. This builds the zip that CI will publish.
+7. Run `git push --follow-tags`.
+
+The Release workflow starts when the tag arrives. It checks the tag, the version in `About.xml`, the commit subject and the zip contents. It then creates a GitHub release with the zip and the changelog section. It never builds the mod.
+
+The zip holds `About/About.xml`, `1.7/Assemblies/FrameProfilerPlus.dll` and `LICENSE`.
+
+### If something fails
+
+- **A check fails during `cog bump`.** `cog` stashes the changes that the checks made and names the stash in its message. Fix the cause, then run `cog bump` again.
+- **The Release workflow fails after the push.** The tag stays on GitHub with no release. Fix the cause. Deleting and pushing the tag again is the owner's decision.
+
+### What is not checked
+
+- The assembly version in the DLL. `cog` stamps it, but nothing reads it back.
+- `scripts/test-verify-release.sh` proves that the release check rejects a Debug DLL. Run it after you change `scripts/verify-release.sh`.
+
 ## Licence
 
-MIT. See [LICENSE](LICENSE). The code is written from scratch. The Dubs Performance Analyzer was used only to compare features.
+MIT. See [LICENSE](LICENSE). The code is written from scratch.
