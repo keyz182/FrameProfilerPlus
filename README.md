@@ -91,4 +91,4 @@ Always start the game for tests with `-savedatafolder=<a scratch folder>`. RimWo
 
 ## Licence
 
-No licence is set yet. The code is written from scratch. The Dubs Performance Analyzer was used only to compare features.
+MIT. See [LICENSE](LICENSE). The code is written from scratch. The Dubs Performance Analyzer was used only to compare features.
