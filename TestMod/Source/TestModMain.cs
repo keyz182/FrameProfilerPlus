@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using HarmonyLib;
 using Verse;
 
@@ -52,6 +53,20 @@ namespace FrameProfilerPlus.TestMod
             ThrowOnce = false;
             throw new InvalidOperationException("[FrameProfilerPlus.TestMod] deliberate prefix exception");
         }
+    }
+
+    // Transpiler attribution check: adds a deliberately slow call at the start of Map.MapUpdate.
+    [HarmonyPatch(typeof(Map), nameof(Map.MapUpdate))]
+    public static class MapUpdateTranspiler
+    {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(MapUpdateTranspiler), nameof(SlowCall)));
+            foreach (var instruction in instructions)
+                yield return instruction;
+        }
+
+        public static void SlowCall() => Workload.Spin(60000);
     }
 
     // Spike S5: small methods with no inlining attributes, driven every frame so their callers are

@@ -7,8 +7,8 @@ using Waylith.Profiling;
 
 namespace FrameProfilerPlus.UI
 {
-    // Harmony patch time by mod: each mod's H: scopes in the selected frames, averaged per frame, with its
-    // patches below it. Totals include anything a patch calls. Labels vanilla has auto-muted (cheap, hot
+    // Harmony patch time by mod: each mod's H: and T: scopes (patch calls, and calls its transpilers added) in the
+    // selected frames, averaged per frame, with its patches below it. Totals include anything a patch calls. Labels vanilla has auto-muted (cheap, hot
     // patches) record nothing, so they show as "muted" and their mod's total is too low.
     public sealed class PatchesSection : ProfilerRowSection
     {
@@ -59,7 +59,7 @@ namespace FrameProfilerPlus.UI
         {
             var labelId = FrameProfiler.PathLabel(entry.pathId);
             var label = FrameProfiler.GetLabel(labelId);
-            if (!label.StartsWith("H:"))
+            if (!label.StartsWith("H:") && !label.StartsWith("T:"))
                 return;
             var sum = SumFor(byMod, ModOf(labelId.Value), label);
             sum.us += entry.totalMicroseconds;
@@ -72,7 +72,7 @@ namespace FrameProfilerPlus.UI
             for (var slot = 0; slot < ScopeRuntime.Registry.SlotCount; slot++)
             {
                 var entry = ScopeRuntime.Registry.Get(slot);
-                if (entry.Kind != ScopeKind.HarmonyPatch || entry.LabelId == LabelRegistry.Unassigned)
+                if ((entry.Kind != ScopeKind.HarmonyPatch && entry.Kind != ScopeKind.Transpiler) || entry.LabelId == LabelRegistry.Unassigned)
                     continue;
                 var id = new ProfilerLabelId((ushort)entry.LabelId);
                 if (FrameProfiler.IsLabelMuted(id))
