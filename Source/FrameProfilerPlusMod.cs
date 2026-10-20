@@ -1,5 +1,6 @@
 using FrameProfilerPlus.Attribution;
 using FrameProfilerPlus.Core;
+using FrameProfilerPlus.Coverage;
 using HarmonyLib;
 using UnityEngine;
 using Verse;
@@ -16,6 +17,8 @@ namespace FrameProfilerPlus
         {
             Settings = GetSettings<FrameProfilerPlusSettings>();
             ScopeRuntime.Initialise(() => Settings.labelCeiling);
+            if (Settings.extendedCoverage)
+                CoverageHost.Initialise();
 
             var harmony = new Harmony(HarmonyId);
             // Install before any other mod patches (About.xml loads us right after Harmony): only patches

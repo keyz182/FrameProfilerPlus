@@ -27,7 +27,6 @@ namespace FrameProfilerPlus.Coverage
         private static readonly MethodInfo IdentityMethod = AccessTools.Method(typeof(CallerRecompiler), nameof(Identity));
 
         private readonly Func<IEnumerable<Assembly>> assemblies;
-        private readonly Func<MethodBase, bool> leaveAlone;
         private readonly Action<string> warn;
         private readonly Harmony harmony = new Harmony(HarmonyId);
 
@@ -38,9 +37,12 @@ namespace FrameProfilerPlus.Coverage
         public CallerRecompiler(Func<IEnumerable<Assembly>> assemblies, Func<MethodBase, bool> leaveAlone, Action<string> warn)
         {
             this.assemblies = assemblies;
-            this.leaveAlone = leaveAlone;
+            LeaveAlone = leaveAlone;
             this.warn = warn;
         }
+
+        // Callers this returns true for are never re-patched. Replaceable, since the answer changes as mods patch.
+        public Func<MethodBase, bool> LeaveAlone { get; set; }
 
         public int MaxCallers { get; set; } = DefaultMaxCallers;
         public int MaxDepth { get; set; } = DefaultMaxDepth;
@@ -139,7 +141,7 @@ namespace FrameProfilerPlus.Coverage
             !method.ContainsGenericParameters && !(method.DeclaringType?.ContainsGenericParameters ?? false)
             && !method.IsAbstract && ILScan.BodySize(method) > 0
             && !MethodSelector.IsRefusedAssembly(method.DeclaringType?.Assembly.GetName().Name ?? "")
-            && !leaveAlone(method);
+            && !LeaveAlone(method);
 
         // Callers can live in any assembly that references the callee's (or in that assembly itself).
         private IEnumerable<MethodBase> CallersOf(MethodBase callee)

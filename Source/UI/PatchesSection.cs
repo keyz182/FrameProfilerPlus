@@ -1,98 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using FrameProfilerPlus.Core;
-using HarmonyLib;
-using Verse;
 using Verse.ProfilerUI;
 using Waylith.Profiling;
 
 namespace FrameProfilerPlus.UI
 {
-    // Adds a tab after the vanilla ones in the Frame Profiler window. The tab strip's labels are a static
-    // readonly array, so the transpiler swaps the array load, maps the active index to our tab while our
-    // section is active, and handles a click on our index. The vanilla tab count differs between builds
-    // (4976 has three, 4981 has four), so the index comes from the label array, never a constant.
-    [HarmonyPatch(typeof(Window_FrameProfiler), "DrawTabStrip")]
-    public static class PatchesTab
-    {
-        private static readonly FieldInfo TabLabelsField = AccessTools.Field(typeof(Window_FrameProfiler), "TabLabels");
-        private static readonly MethodInfo SegmentsMethod = AccessTools.Method(typeof(ProfilerGui), nameof(ProfilerGui.Segments));
-        private static readonly AccessTools.FieldRef<Window_FrameProfiler, ProfilerSession> SessionRef =
-            AccessTools.FieldRefAccess<Window_FrameProfiler, ProfilerSession>("session");
-        private static readonly MethodInfo SwitchSection = AccessTools.Method(typeof(Window_FrameProfiler), "SwitchSection");
-        private static readonly ConditionalWeakTable<Window_FrameProfiler, PatchesSection> Sections = new ConditionalWeakTable<Window_FrameProfiler, PatchesSection>();
-
-        private static readonly AccessTools.FieldRef<Window_FrameProfiler, ProfilerRowSection> ActiveSectionRef =
-            AccessTools.FieldRefAccess<Window_FrameProfiler, ProfilerRowSection>("activeSection");
-
-        private static string[] labels;
-
-        public static int TabIndex => ((string[])TabLabelsField.GetValue(null)).Length;
-
-        public static string[] Labels() => labels ??= ((string[])TabLabelsField.GetValue(null)).Append("Patches").ToArray();
-
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var codes = instructions.ToList();
-            var labelsAt = codes.FindIndex(c => c.LoadsField(TabLabelsField));
-            var segmentsAt = codes.FindIndex(c => c.Calls(SegmentsMethod));
-            // Segments(ref x, y, labels, activeIndex, Color? activeFill, redIndex): the default Color? is built
-            // with `ldloca; initobj`, and the active-index branches all join at that ldloca.
-            var initobjAt = codes.FindIndex(labelsAt + 1, c => c.opcode == OpCodes.Initobj);
-            if (labelsAt < 0 || segmentsAt < 0 || initobjAt < 0 || initobjAt > segmentsAt || !codes[segmentsAt + 1].IsStloc())
-            {
-                Log.Warning("[FrameProfilerPlus] Profiler tab strip not recognised; the Plus tab is unavailable.");
-                return codes;
-            }
-
-            codes[labelsAt] = new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(PatchesTab), nameof(Labels))).MoveLabelsFrom(codes[labelsAt]);
-            // After `stloc clicked`: clicked = OnClicked(this, clicked).
-            var store = codes[segmentsAt + 1];
-            var load = LoadFor(store);
-            codes.InsertRange(segmentsAt + 2, new[]
-            {
-                new CodeInstruction(OpCodes.Ldarg_0),
-                load,
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(PatchesTab), nameof(OnClicked))),
-                new CodeInstruction(store.opcode, store.operand),
-            });
-            // Before the Color? argument: activeIndex = ActiveIndex(activeIndex, this).
-            var join = codes[initobjAt - 1];
-            codes.InsertRange(initobjAt - 1, new[]
-            {
-                new CodeInstruction(OpCodes.Ldarg_0).MoveLabelsFrom(join),
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(PatchesTab), nameof(ActiveIndex))),
-            });
-            return codes;
-        }
-
-        public static int ActiveIndex(int vanillaIndex, Window_FrameProfiler window) =>
-            ActiveSectionRef(window) is PatchesSection ? TabIndex : vanillaIndex;
-
-        private static CodeInstruction LoadFor(CodeInstruction store)
-        {
-            if (store.opcode == OpCodes.Stloc_0) return new CodeInstruction(OpCodes.Ldloc_0);
-            if (store.opcode == OpCodes.Stloc_1) return new CodeInstruction(OpCodes.Ldloc_1);
-            if (store.opcode == OpCodes.Stloc_2) return new CodeInstruction(OpCodes.Ldloc_2);
-            if (store.opcode == OpCodes.Stloc_3) return new CodeInstruction(OpCodes.Ldloc_3);
-            return new CodeInstruction(store.opcode == OpCodes.Stloc_S ? OpCodes.Ldloc_S : OpCodes.Ldloc, store.operand);
-        }
-
-        // Returns the index vanilla should act on: -1 when the click was ours.
-        public static int OnClicked(Window_FrameProfiler window, int clicked)
-        {
-            if (clicked != TabIndex)
-                return clicked;
-            var section = Sections.GetValue(window, w => new PatchesSection(SessionRef(w)));
-            SwitchSection.Invoke(window, new object[] { section });
-            return -1;
-        }
-    }
-
     // Harmony patch time by mod: each mod's H: scopes in the selected frames, averaged per frame, with its
     // patches below it. Totals include anything a patch calls. Labels vanilla has auto-muted (cheap, hot
     // patches) record nothing, so they show as "muted" and their mod's total is too low.
@@ -116,6 +30,7 @@ namespace FrameProfilerPlus.UI
                 new ProfilerColumn(ProfilerColumnKind.Calls, 52f, () => "calls"),
             };
             View.LabelHeader = () => "mod / Harmony patch";
+            View.RootCrumb = () => "Patches";
             View.DetailHeader = "muted patches under-count";
         }
 

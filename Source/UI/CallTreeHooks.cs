@@ -4,7 +4,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using FrameProfilerPlus.Core;
+using FrameProfilerPlus.Coverage;
 using HarmonyLib;
+using RimWorld;
 using Verse;
 using Verse.ProfilerUI;
 using Waylith.Profiling;
@@ -90,7 +92,51 @@ namespace FrameProfilerPlus.UI
             var originals = OriginalsFor(section.View.Rows, section.View.SelectedIndex);
             if (originals.Count > 0)
                 options.Add(new FloatMenuOption("Show Harmony patches", () => Find.WindowStack.Add(new Dialog_MessageBox(Describe(originals)))));
+            if (section is CoverageSection coverage)
+                options.AddRange(coverage.MenuOptions(section.View.SelectedIndex));
+            if (CoverageHost.Service != null)
+                options.AddRange(Expanders(MethodFor(section, section.View.SelectedIndex)));
             return options;
+        }
+
+        // The method behind a row: X: and P: rows through their slot, Auto: rows through vanilla's list.
+        private static MethodBase MethodFor(ProfilerRowSection section, int index)
+        {
+            var rows = section.View.Rows;
+            if (index < 0 || index >= rows.Count)
+                return null;
+            if (section is CoverageSection coverage)
+                return coverage.MethodAt(index);
+            var label = rows[index].Label;
+            if (label.StartsWith("Auto:"))
+                return GameCoverage.VanillaMethodForLabel(FrameProfiler.GetOrCreateLabelId(label).Value);
+            if (ScopeRuntime.Registry == null || !(label.StartsWith("X:") || label.StartsWith("P:")))
+                return null;
+            var originals = SlotOriginals(label);
+            return originals.Count == 1 ? originals[0] : null;
+        }
+
+        private const int MaxCalleeTargets = 32;
+
+        // Each item appends target lines, so they persist and can be edited or removed in the Coverage tab.
+        private static IEnumerable<FloatMenuOption> Expanders(MethodBase method)
+        {
+            if (method == null)
+                yield break;
+            yield return new FloatMenuOption("Time this method, its lambdas and iterators (add coverage target)",
+                () => Add(new[] { CoverageHost.LineFor(method) }));
+
+            var callees = ILScan.Callees(method, out _)
+                .Where(c => c?.DeclaringType != null && !c.ContainsGenericParameters && !MethodSelector.IsRefusedAssembly(c.DeclaringType.Assembly.GetName().Name))
+                .Select(CoverageHost.LineFor).Distinct().Take(MaxCalleeTargets).ToList();
+            if (callees.Count > 0)
+                yield return new FloatMenuOption($"Time the {callees.Count} methods this calls (add coverage targets)", () => Add(callees));
+        }
+
+        private static void Add(IEnumerable<string> lines)
+        {
+            var added = CoverageHost.AddTargets(lines);
+            Messages.Message($"Added {added} coverage target(s). Press Apply in the Coverage tab.", MessageTypeDefOf.SilentInput, false);
         }
 
         // P: and X: rows name their method. An H: patch can serve several methods, so use its parent P: row.
