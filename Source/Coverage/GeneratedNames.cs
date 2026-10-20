@@ -12,6 +12,46 @@ namespace FrameProfilerPlus.Coverage
         public static bool IsGenerated(MethodBase method) =>
             method.Name.StartsWith("<", StringComparison.Ordinal) || IsStateMachineStep(method) || IsInGeneratedType(method.DeclaringType);
 
+        // False for compiler plumbing inside generated types (closure and state machine constructors, Dispose,
+        // get_Current, SetStateMachine...). Only lambdas, local functions and MoveNext hold user code.
+        public static bool IsUserBody(MethodBase method) =>
+            !IsInGeneratedType(method.DeclaringType) || method.Name.StartsWith("<", StringComparison.Ordinal) || IsStateMachineStep(method);
+
+        // The method ordinal Roslyn puts in generated names: 3 in <Run>b__3_0 (lambda in <>c), <>c__DisplayClass3_0
+        // (closure class), <Run>g__Twice|3_0 (local function) and <Run>d__3 (state machine). -1 when absent.
+        public static int OwnerOrdinal(MethodBase method)
+        {
+            var typeName = method.DeclaringType?.Name ?? "";
+            const string closure = "<>c__DisplayClass";
+            if (typeName.StartsWith(closure, StringComparison.Ordinal))
+                return LeadingNumber(typeName.Substring(closure.Length));
+            if (method.Name == "MoveNext" && typeName.StartsWith("<", StringComparison.Ordinal))
+                return LeadingNumber(AfterMarker(typeName, ">d__"));
+            if (method.Name.StartsWith("<", StringComparison.Ordinal))
+            {
+                var tail = AfterMarker(method.Name, ">g__");
+                if (tail != null)
+                    return LeadingNumber(tail.Substring(tail.IndexOf('|') + 1));
+                tail = AfterMarker(method.Name, ">b__");
+                return tail != null && tail.Contains("_") ? LeadingNumber(tail) : -1;
+            }
+            return -1;
+        }
+
+        private static string AfterMarker(string name, string marker)
+        {
+            var at = name.LastIndexOf(marker, StringComparison.Ordinal);
+            return at < 0 ? null : name.Substring(at + marker.Length);
+        }
+
+        private static int LeadingNumber(string text)
+        {
+            var end = 0;
+            while (text != null && end < text.Length && char.IsDigit(text[end]))
+                end++;
+            return end > 0 ? int.Parse(text.Substring(0, end)) : -1;
+        }
+
         // The name the user wrote: "Run" for <Run>b__0_0, "Run" for <Run>d__3.MoveNext, ".ctor" for <.ctor>b__0.
         public static string SourceMethodName(MethodBase method)
         {

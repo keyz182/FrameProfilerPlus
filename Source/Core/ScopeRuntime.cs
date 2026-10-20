@@ -26,7 +26,8 @@ namespace FrameProfilerPlus.Core
         {
             if (!FrameProfiler.IsCapturing)
                 return false;
-            return FrameProfiler.TryEnterScope(new ProfilerLabelId((ushort)Registry.LabelIdFor(slot)));
+            var id = Registry.LabelIdFor(slot);
+            return id != LabelRegistry.Unassigned && FrameProfiler.TryEnterScope(new ProfilerLabelId((ushort)id));
         }
 
         public static void Leave(bool entered)
@@ -65,11 +66,13 @@ namespace FrameProfilerPlus.Core
         }
 
         // Vanilla mutes a discardable label once most of its zones are tiny leaf zones, which keeps cheap,
-        // hot patches from costing more to time than to run.
-        private static int CreateLabel(string text)
+        // hot patches from costing more to time than to run. Coverage labels are never discardable: the tiny
+        // methods the user asked to time would otherwise vanish while the Coverage tab says "patched".
+        private static int CreateLabel(string text, ScopeKind kind)
         {
             var id = FrameProfiler.GetOrCreateLabelId(text);
-            FrameProfiler.MarkLabelDiscardable(id);
+            if (kind != ScopeKind.Coverage)
+                FrameProfiler.MarkLabelDiscardable(id);
             return id.Value;
         }
 

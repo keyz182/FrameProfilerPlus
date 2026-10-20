@@ -71,6 +71,8 @@ namespace FrameProfilerPlus.Coverage
 
         public bool Matches(MethodBase method)
         {
+            if (!GeneratedNames.IsUserBody(method))
+                return false;
             var sourceMethod = GeneratedNames.SourceMethodName(method);
             if (Method == Any && sourceMethod.StartsWith(".", StringComparison.Ordinal))
                 return false;

@@ -11,12 +11,14 @@ namespace FrameProfilerPlus.Tests
         private const int Overflow = 65535;
 
         private readonly List<string> created = new List<string>();
+        private readonly List<ScopeKind> createdKinds = new List<ScopeKind>();
         private int ceiling = 100;
         private int baseCount;
 
         private LabelRegistry NewRegistry() => new LabelRegistry(
-            text =>
+            (text, kind) =>
             {
+                createdKinds.Add(kind);
                 if (baseCount + created.Count >= 65535)
                     return Overflow;
                 created.Add(text);
@@ -105,6 +107,42 @@ namespace FrameProfilerPlus.Tests
             Assert.Equal(id, registry.LabelIdFor(b));
 
             Assert.Equal(new[] { "ModA", "ModB" }, registry.SlotsForLabel(id).Select(s => s.Owner));
+        }
+
+        [Fact]
+        public void LabelFactory_ReceivesTheKindOfTheSlot()
+        {
+            baseCount = 100;
+            var registry = NewRegistry();
+            registry.LabelIdFor(registry.Register(ScopeKind.Coverage, "x", "X:x", "M", null, null));
+            registry.LabelIdFor(registry.Register(ScopeKind.HarmonyPatch, "h", "H:h", "M", null, null));
+
+            Assert.Equal(new[] { ScopeKind.Coverage, ScopeKind.HarmonyPatch }, createdKinds);
+        }
+
+        [Fact]
+        public void LabelIdFor_CalledFromLabelCreation_ReturnsUnassignedInsteadOfRecursing()
+        {
+            LabelRegistry registry = null;
+            var inner = LabelRegistry.Unassigned;
+            var innerSlot = 0;
+            var calls = 0;
+            registry = new LabelRegistry(
+                (text, kind) =>
+                {
+                    calls++;
+                    inner = registry.LabelIdFor(innerSlot);
+                    return 7;
+                },
+                () => 0, () => int.MaxValue, Overflow);
+            innerSlot = registry.Register(ScopeKind.Coverage, "inner", "X:inner", "M", null, null);
+            var outer = registry.Register(ScopeKind.Coverage, "outer", "X:outer", "M", null, null);
+
+            Assert.Equal(7, registry.LabelIdFor(outer));
+
+            Assert.Equal(LabelRegistry.Unassigned, inner);
+            Assert.Equal(1, calls);
+            Assert.Equal(7, registry.LabelIdFor(innerSlot));
         }
     }
 }

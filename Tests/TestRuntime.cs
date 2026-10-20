@@ -78,7 +78,7 @@ namespace FrameProfilerPlus.Tests
         public static LabelRegistry NewRegistry()
         {
             var next = 0;
-            return new LabelRegistry(_ => next++, () => next, () => int.MaxValue, 65535);
+            return new LabelRegistry((_, __) => next++, () => next, () => int.MaxValue, 65535);
         }
 
         public static IEnumerable<string> EnteredLabels(LabelRegistry registry)

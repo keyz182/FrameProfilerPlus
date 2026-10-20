@@ -62,7 +62,10 @@ namespace FrameProfilerPlus.Core
 
         public const int Unassigned = -1;
 
-        private readonly Func<string, int> createLabel;
+        private readonly Func<string, ScopeKind, int> createLabel;
+
+        // Set while this thread is inside label creation; a scope entered meanwhile is not timed.
+        [ThreadStatic] private static bool assigning;
         private readonly Func<int> labelCount;
         private readonly Func<int> ceiling;
         private readonly int overflowLabelId;
@@ -74,7 +77,7 @@ namespace FrameProfilerPlus.Core
         private readonly Dictionary<ScopeKind, int> otherLabels = new Dictionary<ScopeKind, int>();
         private Slot[] snapshot = Array.Empty<Slot>();
 
-        public LabelRegistry(Func<string, int> createLabel, Func<int> labelCount, Func<int> ceiling, int overflowLabelId)
+        public LabelRegistry(Func<string, ScopeKind, int> createLabel, Func<int> labelCount, Func<int> ceiling, int overflowLabelId)
         {
             this.createLabel = createLabel;
             this.labelCount = labelCount;
@@ -104,12 +107,25 @@ namespace FrameProfilerPlus.Core
 
         public Slot Get(int slot) => Volatile.Read(ref snapshot)[slot];
 
-        // Hot path: one array read and one volatile read once the label exists.
+        // Hot path: one array read and one volatile read once the label exists. Returns Unassigned when called
+        // re-entrantly from label creation (something the profiler calls to make a label was itself timed).
         public int LabelIdFor(int slot)
         {
             var entry = Volatile.Read(ref snapshot)[slot];
             var id = Volatile.Read(ref entry.labelId);
-            return id != Unassigned ? id : AssignLabel(entry);
+            if (id != Unassigned)
+                return id;
+            if (assigning)
+                return Unassigned;
+            assigning = true;
+            try
+            {
+                return AssignLabel(entry);
+            }
+            finally
+            {
+                assigning = false;
+            }
         }
 
         public IReadOnlyList<Slot> SlotsForLabel(int labelId)
@@ -125,7 +141,7 @@ namespace FrameProfilerPlus.Core
                 if (entry.labelId != Unassigned)
                     return entry.labelId;
 
-                var id = CeilingReached || labelCount() >= ceiling() ? OtherLabel(entry.Kind) : createLabel(entry.LabelText);
+                var id = CeilingReached || labelCount() >= ceiling() ? OtherLabel(entry.Kind) : createLabel(entry.LabelText, entry.Kind);
                 if (id == overflowLabelId)
                     CeilingReached = true;
 
@@ -141,7 +157,7 @@ namespace FrameProfilerPlus.Core
         {
             CeilingReached = true;
             if (!otherLabels.TryGetValue(kind, out var id))
-                otherLabels[kind] = id = createLabel(Prefix(kind) + "<other>");
+                otherLabels[kind] = id = createLabel(Prefix(kind) + "<other>", kind);
             return id;
         }
 
