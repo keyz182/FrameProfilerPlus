@@ -54,6 +54,65 @@ namespace FrameProfilerPlus.TestMod
         }
     }
 
+    // Spike S5: small methods with no inlining attributes, driven every frame so their callers are
+    // compiled (and inline them) before any coverage patch exists.
+    [HarmonyPatch(typeof(Map), nameof(Map.MapUpdate))]
+    public static class InlineSpikeDriver
+    {
+        public static void Postfix() => InlineSpike.Drive();
+    }
+
+    // Identity transpiler: re-patching a caller makes Harmony rebuild it, dropping inlined copies of its callees.
+    public static class Recompile
+    {
+        public static IEnumerable<HarmonyLib.CodeInstruction> Identity(IEnumerable<HarmonyLib.CodeInstruction> instructions) => instructions;
+    }
+
+    public static class InlineSpike
+    {
+        public static int Sink;
+        public static bool Enabled = true;
+
+        public static int Tiny(int x) => Sink += x;
+
+        public static int Mid(int x)
+        {
+            var a = x * 3 + Sink;
+            if (a > 1000000)
+                a -= 999983;
+            for (var i = 0; i < 4; i++)
+                a ^= (a << 3) + i;
+            Sink += a & 7;
+            return a;
+        }
+
+        public static int Middle(int x) => Tiny(x + 1);
+
+        public static int Outer(int x) => Middle(x) + 1;
+
+        public static void Direct()
+        {
+            for (var i = 0; i < 20; i++)
+                Tiny(i);
+            for (var i = 0; i < 20; i++)
+                Mid(i);
+        }
+
+        public static void Chain()
+        {
+            for (var i = 0; i < 20; i++)
+                Outer(i);
+        }
+
+        public static void Drive()
+        {
+            if (!Enabled)
+                return;
+            Direct();
+            Chain();
+        }
+    }
+
     // Coverage targets the vanilla instrumenter skips: a constructor, a closure and an iterator.
     public static class Workload
     {
