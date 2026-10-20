@@ -13,6 +13,9 @@ namespace FrameProfilerPlus
         public bool harmonyAttribution;
         public bool extendedCoverage;
         public bool tickGrouping;
+        // Probes under tickGrouping; the thing probe is always on with it.
+        public bool tickDrivers = true;
+        public bool tickComps = true;
         public int labelCeiling = DefaultLabelCeiling;
         // One target per line, vanilla syntax [-][Asm!][Type][::Method]. Applied from the Coverage tab.
         public List<string> coverageTargets = new List<string>();
@@ -25,6 +28,8 @@ namespace FrameProfilerPlus
             Scribe_Values.Look(ref harmonyAttribution, "harmonyAttribution", false);
             Scribe_Values.Look(ref extendedCoverage, "extendedCoverage", false);
             Scribe_Values.Look(ref tickGrouping, "tickGrouping", false);
+            Scribe_Values.Look(ref tickDrivers, "tickDrivers", true);
+            Scribe_Values.Look(ref tickComps, "tickComps", true);
             Scribe_Values.Look(ref labelCeiling, "labelCeiling", DefaultLabelCeiling);
             Scribe_Collections.Look(ref coverageTargets, "coverageTargets", LookMode.Value);
             coverageTargets ??= new List<string>();
@@ -49,6 +54,11 @@ namespace FrameProfilerPlus
             }
             listing.CheckboxLabeled("Per-tick grouping (restart required)", ref tickGrouping,
                 "Time each thing's tick while the profiler captures, grouped by ThingDef, for the Groups tab. Costs about 0.1 ms per tick at 1,500 things.");
+            if (tickGrouping)
+            {
+                listing.CheckboxLabeled("  Time job drivers (restart required)", ref tickDrivers, "Group time in JobDriver ticks by driver type.");
+                listing.CheckboxLabeled("  Time comps (restart required)", ref tickComps, "Group time in ThingComp ticks by comp type.");
+            }
             listing.Label($"Label ceiling: {labelCeiling}");
             labelCeiling = (int)listing.Slider(labelCeiling, 1000, DefaultLabelCeiling);
             listing.End();

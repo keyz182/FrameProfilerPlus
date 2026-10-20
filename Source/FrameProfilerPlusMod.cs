@@ -27,7 +27,7 @@ namespace FrameProfilerPlus
             if (Settings.harmonyAttribution)
                 AttributionHooks.Install(harmony, typeof(ScopeRuntime), ScopeRuntime.Registry, ModResolver.ModName, Warn);
             if (Settings.tickGrouping)
-                TickProbes.Install(harmony);
+                TickProbes.Install(harmony, Settings.tickDrivers, Settings.tickComps);
             // Parameterless PatchAll() finds no calling assembly on the 1.7 runtime and patches nothing.
             harmony.PatchAll(typeof(FrameProfilerPlusMod).Assembly);
 
