@@ -25,7 +25,7 @@ namespace FrameProfilerPlus
             // Install before any other mod patches (About.xml loads us right after Harmony): only patches
             // built after this point are timed. Read once; a change takes effect at the next start.
             if (Settings.harmonyAttribution)
-                AttributionHooks.Install(harmony, typeof(ScopeRuntime), ScopeRuntime.Registry, ModResolver.ModName, Warn);
+                AttributionHooks.Install(harmony, typeof(ScopeRuntime), ScopeRuntime.Registry, ModResolver.ModName, Warn, Settings.transpilerAttribution);
             if (Settings.tickGrouping)
                 TickProbes.Install(harmony, Settings.tickDrivers, Settings.tickComps);
             // Parameterless PatchAll() finds no calling assembly on the 1.7 runtime and patches nothing.

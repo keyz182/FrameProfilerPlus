@@ -18,10 +18,13 @@ namespace FrameProfilerPlus.Attribution
         public int MethodsWrapped;
         public int MissedMethodWraps;
         public int Retries;
+        public bool TranspilerHookActive;
+        public int TranspilerCallsWrapped;
 
         public override string ToString() =>
             $"{Generations} replacements built, {MethodsWrapped} patched methods timed (P:), {PatchCallsWrapped} patch calls timed (H:), " +
-            $"{Retries} rebuilt without timing, {MissedMethodWraps} missed";
+            $"{Retries} rebuilt without timing, {MissedMethodWraps} missed" +
+            (TranspilerHookActive ? $", {TranspilerCallsWrapped} transpiler-added calls timed (T:)" : "");
     }
 
     // Times Harmony patches from inside Harmony's replacement builder (0Harmony 3.0.0-rc.3 internals):
@@ -48,6 +51,7 @@ namespace FrameProfilerPlus.Attribution
             public bool touched;
             public bool wrapExpected;
             public bool wrapCalled;
+            public readonly List<RecordedCall> recorded = new List<RecordedCall>();
         }
 
         [ThreadStatic] private static Site site;
@@ -73,7 +77,14 @@ namespace FrameProfilerPlus.Attribution
         // Tests only: makes the P: wrap emit invalid IL so the rebuild path can be exercised.
         internal static bool ForceInvalidMethodWrap { get; set; }
 
-        public static AttributionStats Install(Harmony harmony, Type runtime, LabelRegistry labels, Func<Assembly, string> owner, Action<string> warning)
+        internal static Generation CurrentGeneration => current;
+
+        internal static bool IsSuppressed => suppressed;
+
+        internal static Assembly OwnAssembly => Own;
+
+        public static AttributionStats Install(Harmony harmony, Type runtime, LabelRegistry labels, Func<Assembly, string> owner, Action<string> warning,
+            bool transpilerAttribution = false)
         {
             emitter = new ScopeEmitter(runtime);
             registry = labels;
@@ -98,6 +109,14 @@ namespace FrameProfilerPlus.Attribution
                 harmony.Patch(CreateReplacement, transpiler: Hook(nameof(CreateReplacementTranspiler)));
             if (!Stats.MethodWrapActive)
                 warn("Patched methods are not timed as a whole (P: scopes): Harmony's replacement builder did not match.");
+            if (transpilerAttribution)
+            {
+                // The T: scopes rely on the enclosing P: scope to close a zone a throwing call leaves open.
+                if (Stats.MethodWrapActive)
+                    Stats.TranspilerHookActive = TranspilerAttribution.Install(harmony, warn);
+                else
+                    warn("Transpiler attribution is off: it needs patched-method (P:) timing.");
+            }
             return Stats;
         }
 
@@ -274,6 +293,7 @@ namespace FrameProfilerPlus.Attribution
                 var config = Config(creator);
                 var original = (MethodBase)ConfigField(config, "original");
                 var slot = MethodSlot(original);
+                codes = InsertTranspilerScopes(codes, generation, original, (ILGenerator)ConfigField(config, "il"));
                 var wrapped = emitter.WrapBody(codes, (Type)ConfigField(config, "returnType"), slot, repair: true, (ILGenerator)ConfigField(config, "il"));
                 if (ForceInvalidMethodWrap)
                     wrapped.Insert(0, new CodeInstruction(OpCodes.Pop));
@@ -286,6 +306,25 @@ namespace FrameProfilerPlus.Attribution
                 WarnOnce($"Could not time patched method; it runs untimed. {e}");
                 return codes;
             }
+        }
+
+        private static List<CodeInstruction> InsertTranspilerScopes(List<CodeInstruction> codes, Generation generation, MethodBase original, ILGenerator il)
+        {
+            if (!Stats.TranspilerHookActive || generation.recorded.Count == 0)
+                return codes;
+            var inserted = TranspilerAttribution.Insert(codes, generation.recorded, il, emitter, call => TranspilerSlot(call, original), out var count);
+            Stats.TranspilerCallsWrapped += count;
+            return inserted;
+        }
+
+        private static int TranspilerSlot(RecordedCall call, MethodBase original)
+        {
+            var transpiler = call.Transpiler;
+            var callee = call.Callee;
+            var owner = ownerOf(transpiler.DeclaringType?.Assembly);
+            var signature = string.Join(",", callee.GetParameters().Select(p => p.ParameterType.FullName));
+            return registry.Register(ScopeKind.Transpiler, $"T|{transpiler.DeclaringType?.FullName}.{transpiler.Name}|{callee.DeclaringType?.FullName}.{callee.Name}({signature})",
+                $"T:{owner} {transpiler.DeclaringType?.Name}.{transpiler.Name}: {callee.DeclaringType?.Name}.{callee.Name}", owner, transpiler as MethodInfo, original);
         }
 
         private static int MethodSlot(MethodBase original)

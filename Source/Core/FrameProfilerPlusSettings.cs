@@ -11,6 +11,7 @@ namespace FrameProfilerPlus
 
         // Off by default: the hook touches every Harmony replacement. Read once at startup.
         public bool harmonyAttribution;
+        public bool transpilerAttribution;
         public bool extendedCoverage;
         public bool tickGrouping;
         // Probes under tickGrouping; the thing probe is always on with it.
@@ -26,6 +27,7 @@ namespace FrameProfilerPlus
         public override void ExposeData()
         {
             Scribe_Values.Look(ref harmonyAttribution, "harmonyAttribution", false);
+            Scribe_Values.Look(ref transpilerAttribution, "transpilerAttribution", false);
             Scribe_Values.Look(ref extendedCoverage, "extendedCoverage", false);
             Scribe_Values.Look(ref tickGrouping, "tickGrouping", false);
             Scribe_Values.Look(ref tickDrivers, "tickDrivers", true);
@@ -43,6 +45,11 @@ namespace FrameProfilerPlus
             listing.Begin(inRect);
             listing.CheckboxLabeled("Harmony attribution (restart required)", ref harmonyAttribution,
                 "Time each Harmony prefix, postfix and finalizer as its own scope, labelled with its owning mod.");
+            if (harmonyAttribution)
+            {
+                listing.CheckboxLabeled("  Time calls added by transpilers (restart required)", ref transpilerAttribution,
+                    "Time each call a foreign transpiler adds or retargets, labelled T: with the owning mod. Inline IL a transpiler adds is not timed.");
+            }
             listing.CheckboxLabeled("Extended method coverage (restart required)", ref extendedCoverage,
                 "Allow constructors, lambdas, iterators and small methods as profiling targets.");
             if (extendedCoverage)

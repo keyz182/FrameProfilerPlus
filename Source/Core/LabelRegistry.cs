@@ -10,6 +10,7 @@ namespace FrameProfilerPlus.Core
         HarmonyPatch,
         PatchedMethod,
         Coverage,
+        Transpiler,
     }
 
     // Maps scope sites to profiler labels. Pure logic: the label factory and the label count are injected.
@@ -165,6 +166,7 @@ namespace FrameProfilerPlus.Core
         {
             ScopeKind.HarmonyPatch => "H:",
             ScopeKind.PatchedMethod => "P:",
+            ScopeKind.Transpiler => "T:",
             _ => "X:",
         };
     }

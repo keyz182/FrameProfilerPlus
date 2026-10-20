@@ -65,6 +65,9 @@ namespace FrameProfilerPlus.Attribution
             return allowed;
         }
 
+        // The method a call, callvirt or newobj instruction invokes, or null for any other instruction.
+        public static MethodBase CalleeOf(CodeInstruction code) => CalleeOf(code.opcode, code.operand);
+
         private static MethodBase CalleeOf(OpCode opcode, object operand) =>
             (opcode == OpCodes.Call || opcode == OpCodes.Callvirt || opcode == OpCodes.Newobj) ? operand as MethodBase : null;
     }

@@ -11,7 +11,7 @@ namespace FrameProfilerPlus.Tests
 {
     // The real attribution hooks, installed into this process's Harmony with the counting runtime, driven by
     // every patch shape Harmony emits. Each test asserts the result is unchanged and no zone is left open.
-    public class AttributionHooksTests
+    public partial class AttributionHooksTests
     {
         private static readonly object InstallGate = new object();
         private static readonly List<string> Warnings = new List<string>();
@@ -27,7 +27,7 @@ namespace FrameProfilerPlus.Tests
                 if (registry == null)
                 {
                     registry = TestRuntime.NewRegistry();
-                    stats = AttributionHooks.Install(new Harmony("test.hooks"), typeof(TestRuntime), registry, a => a.GetName().Name, Warnings.Add);
+                    stats = AttributionHooks.Install(new Harmony("test.hooks"), typeof(TestRuntime), registry, a => a.GetName().Name, Warnings.Add, transpilerAttribution: true);
                 }
             }
             TestRuntime.Reset();
