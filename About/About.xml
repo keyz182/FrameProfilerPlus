@@ -19,9 +19,11 @@
   </loadAfter>
   <description>Extends the RimWorld 1.7 Frame Profiler (Dev mode, Debug actions, General, Frame profiler).
 
-- Harmony attribution: time each prefix, postfix and finalizer, and show the mod that owns it.
-- Per-tick timing, grouped by Def, Pawn or Thing, in a new Ticks tab.
-- Wider method coverage: constructors, lambdas, iterators and small methods that the built-in profiler skips.
+Every feature is off by default. Turn them on in the mod settings, then restart.
+
+- Harmony attribution: the time of each patch, by owner mod, plus calls that transpilers added.
+- Extended coverage: time constructors, lambdas, iterators and small methods.
+- Per-tick groups: tick time by ThingDef, job driver and comp, with a jump to the worst frame.
 
 Load this mod directly after Harmony.</description>
 </ModMetaData>
