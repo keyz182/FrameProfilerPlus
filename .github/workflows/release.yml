@@ -1,0 +1,47 @@
+name: Release
+
+# Publishes a GitHub release when a version tag is pushed. It never builds the mod: the build needs the
+# game's own DLLs, so `cog bump` builds and checks the DLL locally and commits it. This job packages that
+# committed DLL.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: sh scripts/check-tag.sh "$TAG"
+
+      - name: Package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: sh scripts/package.sh "${TAG#v}"
+
+      - name: Check the zip
+        env:
+          TAG: ${{ github.ref_name }}
+        run: sh scripts/check-zip.sh "dist/FrameProfilerPlus-$TAG.zip"
+
+      - name: Write the release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: sh scripts/changelog-section.sh "$TAG" > notes.md
+
+      - name: Create the release
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" "dist/FrameProfilerPlus-$TAG.zip" --title "$TAG" --notes-file notes.md --verify-tag
