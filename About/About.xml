@@ -3,7 +3,7 @@
   <name>Frame Profiler Plus</name>
   <author>keyz</author>
   <packageId>keyz.frameprofilerplus</packageId>
-  <modVersion>0.0.0</modVersion>
+  <modVersion>1.0.0</modVersion>
   <supportedVersions>
     <li>1.7</li>
   </supportedVersions>
