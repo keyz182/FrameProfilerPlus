@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using FrameProfilerPlus.Coverage;
+using FrameProfilerPlus.Ticks;
 using HarmonyLib;
 using Verse;
 using Verse.ProfilerUI;
@@ -49,6 +50,8 @@ namespace FrameProfilerPlus.UI
             var list = new List<Tab> { new Tab { Label = "Patches", SectionType = typeof(PatchesSection), Create = s => new PatchesSection(s) } };
             if (CoverageHost.Service != null)
                 list.Add(new Tab { Label = "Coverage", SectionType = typeof(CoverageSection), Create = s => new CoverageSection(s) });
+            if (FrameProfilerPlusMod.Settings.tickGrouping && TickProbes.Aggregator != null)
+                list.Add(new Tab { Label = "Groups", SectionType = typeof(GroupsSection), Create = s => new GroupsSection(s) });
             return list;
         }
 

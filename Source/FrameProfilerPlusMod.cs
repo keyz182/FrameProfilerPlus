@@ -1,6 +1,7 @@
 using FrameProfilerPlus.Attribution;
 using FrameProfilerPlus.Core;
 using FrameProfilerPlus.Coverage;
+using FrameProfilerPlus.Ticks;
 using HarmonyLib;
 using UnityEngine;
 using Verse;
@@ -25,6 +26,8 @@ namespace FrameProfilerPlus
             // built after this point are timed. Read once; a change takes effect at the next start.
             if (Settings.harmonyAttribution)
                 AttributionHooks.Install(harmony, typeof(ScopeRuntime), ScopeRuntime.Registry, ModResolver.ModName, Warn);
+            if (Settings.tickGrouping)
+                TickProbes.Install(harmony);
             // Parameterless PatchAll() finds no calling assembly on the 1.7 runtime and patches nothing.
             harmony.PatchAll(typeof(FrameProfilerPlusMod).Assembly);
 

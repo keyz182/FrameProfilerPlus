@@ -94,6 +94,8 @@ namespace FrameProfilerPlus.UI
                 options.Add(new FloatMenuOption("Show Harmony patches", () => Find.WindowStack.Add(new Dialog_MessageBox(Describe(originals)))));
             if (section is CoverageSection coverage)
                 options.AddRange(coverage.MenuOptions(section.View.SelectedIndex));
+            if (section is GroupsSection groups)
+                options.AddRange(groups.MenuOptions(section.View.SelectedIndex));
             if (CoverageHost.Service != null)
                 options.AddRange(Expanders(MethodFor(section, section.View.SelectedIndex)));
             return options;

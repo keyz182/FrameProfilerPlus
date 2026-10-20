@@ -47,8 +47,8 @@ namespace FrameProfilerPlus
                 listing.Label($"Most methods timed at once: {maxCoverageMethods}");
                 maxCoverageMethods = (int)listing.Slider(maxCoverageMethods, 100, 5000);
             }
-            listing.CheckboxLabeled("Per-tick grouping", ref tickGrouping,
-                "Record per-tick time grouped by Def, Pawn and Thing for the Ticks tab.");
+            listing.CheckboxLabeled("Per-tick grouping (restart required)", ref tickGrouping,
+                "Time each thing's tick while the profiler captures, grouped by ThingDef, for the Groups tab. Costs about 0.1 ms per tick at 1,500 things.");
             listing.Label($"Label ceiling: {labelCeiling}");
             labelCeiling = (int)listing.Slider(labelCeiling, 1000, DefaultLabelCeiling);
             listing.End();
