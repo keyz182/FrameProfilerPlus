@@ -6,6 +6,8 @@ Open the profiler with Dev mode, Debug actions, General, Frame profiler.
 
 Every feature is off by default. Each one needs a game restart after you change it.
 
+Full documentation is on the [wiki](https://github.com/keyz182/FrameProfilerPlus/wiki). It has a tutorial, how-to guides, reference pages and explanations.
+
 ## What you get
 
 | Feature | What it shows | Where |
@@ -16,6 +18,8 @@ Every feature is off by default. Each one needs a game restart after you change 
 | Per-tick groups | Tick time grouped by ThingDef, job driver type and comp type, with the worst frame of each group | The Groups tab |
 
 The CPU tab also gets a Detail column. It shows the owner mod of our scopes, and the time and calls per tick for the selected frames. Only simulation code has a meaningful per-tick figure.
+
+![The CPU tab with H:, P:, T: and X: rows from a test mod. The Detail column is on the right.](docs/images/cpu-tab.png)
 
 ## Requirements
 
