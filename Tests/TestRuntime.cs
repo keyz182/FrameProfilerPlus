@@ -1,13 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using FrameProfilerPlus.Core;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: TestCollectionOrderer("FrameProfilerPlus.Tests.HooksLastOrderer", "FrameProfilerPlus.Tests")]
 
 namespace FrameProfilerPlus.Tests
 {
+    // AttributionHooksTests installs Harmony hooks that stay for the life of the process and add P: scopes
+    // to every method patched later. Run it last so the other classes see plain Harmony.
+    public sealed class HooksLastOrderer : ITestCollectionOrderer
+    {
+        public IEnumerable<ITestCollection> OrderTestCollections(IEnumerable<ITestCollection> collections) =>
+            collections.OrderBy(c => c.DisplayName.Contains("AttributionHooksTests") ? 1 : 0);
+    }
+
     // Counting scope runtime with the ScopeEmitter contract. Depth is the number of open zones: every test
     // asserts it returns to zero, which is what keeps the real profiler's tree correctly nested.
     public static class TestRuntime
