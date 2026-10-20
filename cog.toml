@@ -1,0 +1,21 @@
+# Releases: run `cog bump --version 1.0.0` once, then `cog bump --auto`. See the README, section Releasing.
+tag_prefix = "v"
+branch_whitelist = ["main"]
+ignore_merge_commits = true
+
+# Each hook must succeed or the bump stops before it commits. The Release build writes the DLL that the
+# release carries, so the tagged tree always holds a DLL built from that exact source.
+pre_bump_hooks = [
+  "sh scripts/check-clean.sh",
+  "dotnet test Tests/FrameProfilerPlus.Tests.csproj",
+  "dotnet build -c Release --no-incremental Source/FrameProfilerPlus.csproj -p:Version={{version}}",
+  "sed -i -E 's#<modVersion>[^<]*</modVersion>#<modVersion>{{version}}</modVersion>#' About/About.xml",
+  "sh scripts/verify-release.sh {{version}}",
+]
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+owner = "keyz182"
+repository = "FrameProfilerPlus"
