@@ -8,6 +8,8 @@ Every feature is off by default. Each one needs a game restart after you change 
 
 Full documentation is on the [wiki](https://github.com/keyz182/FrameProfilerPlus/wiki). It has a tutorial, how-to guides, reference pages and explanations.
 
+Get it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3824067868), or download the zip from [GitHub releases](https://github.com/keyz182/FrameProfilerPlus/releases).
+
 ## What you get
 
 | Feature | What it shows | Where |
