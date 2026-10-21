@@ -1,0 +1,16 @@
+<Configuration>
+  <Excluded>
+    <exclude>.git/</exclude>
+    <exclude>.github/</exclude>
+    <exclude>.gitignore</exclude>
+    <exclude>Assets/</exclude>
+    <exclude>Source/</exclude>
+    <exclude>Tests/</exclude>
+    <exclude>TestMod/</exclude>
+    <exclude>docs/</exclude>
+    <exclude>dist/</exclude>
+    <exclude>scripts/</exclude>
+    <exclude>cog.toml</exclude>
+    <exclude>_PublisherPlus.xml</exclude>
+  </Excluded>
+</Configuration>
