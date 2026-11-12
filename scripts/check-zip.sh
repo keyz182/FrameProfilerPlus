@@ -8,6 +8,8 @@ FrameProfilerPlus/1.7/Assemblies/
 FrameProfilerPlus/1.7/Assemblies/FrameProfilerPlus.dll
 FrameProfilerPlus/About/
 FrameProfilerPlus/About/About.xml
+FrameProfilerPlus/About/Preview.png
+FrameProfilerPlus/About/PublishedFileId.txt
 FrameProfilerPlus/LICENSE'
 actual=$(unzip -Z1 "$zip" | sort)
 if [ "$actual" != "$expected" ]; then
