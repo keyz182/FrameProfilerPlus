@@ -23,45 +23,77 @@ namespace FrameProfilerPlus.Coverage
     // The parts of coverage that touch game types: vanilla's instrumented set and the profiler history.
     public static class GameCoverage
     {
-        private static readonly FieldInfo ReplacedSet = AccessTools.Field(typeof(ProfilerInstrumentation), "replacedMethodSet");
+        // Vanilla keeps its instrumented set as Dictionary<MethodKey, Entry>. Entry is private: Handle is the
+        // RuntimeMethodHandle value and Label is null until the method body has been rewritten.
+        private static readonly FieldInfo InstrumentedField = AccessTools.Field(typeof(ProfilerInstrumentation), "instrumentedMethods");
+        private static readonly Type EntryType = AccessTools.Inner(typeof(ProfilerInstrumentation), "Entry");
+        private static readonly FieldInfo HandleField = EntryType == null ? null : AccessTools.Field(EntryType, "Handle");
+        private static readonly FieldInfo LabelField = EntryType == null ? null : AccessTools.Field(EntryType, "Label");
+        private static readonly Dictionary<IntPtr, MethodBase> MethodsByHandle = new Dictionary<IntPtr, MethodBase>();
         private static bool warned;
 
         // Methods vanilla times with Auto: scopes. A renamed field is treated as "none", with one warning.
         public static IReadOnlyCollection<MethodBase> VanillaTimed()
         {
-            if (ReplacedSet?.GetValue(null) is HashSet<MethodBase> set)
-            {
-                try
-                {
-                    return set.ToList();
-                }
-                catch (InvalidOperationException)
-                {
-                    return Array.Empty<MethodBase>();
-                }
-            }
-            if (!warned)
-            {
-                warned = true;
-                FrameProfilerPlusMod.Warn("Vanilla's instrumented-method set was not found; coverage cannot skip methods vanilla already times.");
-            }
-            return Array.Empty<MethodBase>();
+            return InstrumentedEntries().Select(e => e.Method).ToList();
         }
-
-        private static readonly FieldInfo ReplacedList = AccessTools.Field(typeof(ProfilerInstrumentation), "replacedMethods");
 
         // The method behind a vanilla Auto: row, or null.
         public static MethodBase VanillaMethodForLabel(int labelId)
         {
-            if (!(ReplacedList?.GetValue(null) is IEnumerable<(MethodBase Method, ProfilerLabelId Label)> list))
-                return null;
+            return InstrumentedEntries().Where(e => e.Label == labelId).Select(e => e.Method).FirstOrDefault();
+        }
+
+        // Snapshot of vanilla's instrumented methods with their label ids (Unassigned before the rewrite).
+        private static List<(MethodBase Method, int Label)> InstrumentedEntries()
+        {
+            var result = new List<(MethodBase, int)>();
+            if (!(InstrumentedField?.GetValue(null) is System.Collections.IDictionary map) || HandleField == null || LabelField == null)
+            {
+                if (!warned)
+                {
+                    warned = true;
+                    FrameProfilerPlusMod.Warn("Vanilla's instrumented-method set was not found; coverage cannot skip methods vanilla already times.");
+                }
+                return result;
+            }
             try
             {
-                return list.Where(e => e.Label.Value == labelId).Select(e => e.Method).FirstOrDefault();
+                foreach (var entry in map.Values)
+                {
+                    var method = MethodFor((IntPtr)HandleField.GetValue(entry));
+                    if (method == null)
+                        continue;
+                    var label = LabelField.GetValue(entry) is ProfilerLabelId id ? id.Value : LabelRegistry.Unassigned;
+                    result.Add((method, label));
+                }
             }
             catch (InvalidOperationException)
             {
-                return null;
+                // Vanilla changed the set mid-enumeration; the caller retries on the next scan.
+                result.Clear();
+            }
+            return result;
+        }
+
+        // Handles of methods on generic types cannot be resolved without the type handle; those are skipped.
+        private static MethodBase MethodFor(IntPtr handle)
+        {
+            lock (MethodsByHandle)
+            {
+                if (MethodsByHandle.TryGetValue(handle, out var cached))
+                    return cached;
+                MethodBase method;
+                try
+                {
+                    method = MethodBase.GetMethodFromHandle(RuntimeMethodHandle.FromIntPtr(handle));
+                }
+                catch (ArgumentException)
+                {
+                    method = null;
+                }
+                MethodsByHandle[handle] = method;
+                return method;
             }
         }
 
