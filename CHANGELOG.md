@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.0.2](https://github.com/keyz182/FrameProfilerPlus/compare/eb348e0c47f5617f00dedb21672f436f3af24b48..v1.0.2) - 2026-11-12
+#### Bug Fixes
+Includes the fixes from v1.0.1, which was tagged but never released:
+- support ProfilerLabelId int ids on 1.7.5005 (fixes the MissingMethodException on load) - ([df85722](https://github.com/keyz182/FrameProfilerPlus/commit/df85722))
+- read vanilla's instrumented methods from instrumentedMethods on 1.7.5005 - ([37ff0ce](https://github.com/keyz182/FrameProfilerPlus/commit/37ff0ce))
+#### Continuous Integration
+- allow Preview.png and PublishedFileId.txt in the release zip - ([eb348e0](https://github.com/keyz182/FrameProfilerPlus/commit/eb348e0c47f5617f00dedb21672f436f3af24b48)) - Kieran David Evans
+
+- - -
+
 ## [v1.0.1](https://github.com/keyz182/FrameProfilerPlus/compare/39bafb0f07b8d60b3dcaa0018eb1aa4dfcb9ad8d..v1.0.1) - 2026-11-12
 #### Bug Fixes
 - read vanilla's instrumented methods from instrumentedMethods on 1.7.5005 - ([37ff0ce](https://github.com/keyz182/FrameProfilerPlus/commit/37ff0cecb08c5141272874ae3518c59a70762524)) - Kieran David Evans
