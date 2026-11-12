@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.0.1](https://github.com/keyz182/FrameProfilerPlus/compare/39bafb0f07b8d60b3dcaa0018eb1aa4dfcb9ad8d..v1.0.1) - 2026-11-12
+#### Bug Fixes
+- read vanilla's instrumented methods from instrumentedMethods on 1.7.5005 - ([37ff0ce](https://github.com/keyz182/FrameProfilerPlus/commit/37ff0cecb08c5141272874ae3518c59a70762524)) - Kieran David Evans
+- support ProfilerLabelId int ids on 1.7.5005 - ([df85722](https://github.com/keyz182/FrameProfilerPlus/commit/df8572255d790c8622c755383de87879691dae94)) - Kieran David Evans
+#### Documentation
+- link the Steam Workshop page - ([4d834b1](https://github.com/keyz182/FrameProfilerPlus/commit/4d834b1e0a64a785e55d3010906e80a62d2111aa)) - Kieran David Evans
+- preview image - ([39bafb0](https://github.com/keyz182/FrameProfilerPlus/commit/39bafb0f07b8d60b3dcaa0018eb1aa4dfcb9ad8d)) - Kieran David Evans
+#### Miscellaneous Chores
+- record Workshop file id and tidy upload excludes - ([d449369](https://github.com/keyz182/FrameProfilerPlus/commit/d4493698db6d7ccb84e4eed64ea653187a1f5d95)) - Kieran David Evans
+- exclude dev files from Workshop uploads - ([c60d9e2](https://github.com/keyz182/FrameProfilerPlus/commit/c60d9e2781142c94a8f53261d039e67171ed9036)) - Kieran David Evans
+
+- - -
+
 ## [v1.0.0](https://github.com/keyz182/FrameProfilerPlus/compare/7184746a4542e68e11321ccb41e9e2424c840087..v1.0.0) - 2026-10-20
 #### Features
 - show transpiler-added calls in the Patches tab - ([fce5a15](https://github.com/keyz182/FrameProfilerPlus/commit/fce5a1578c25639dfe4673c6ab36afbbb3da8734)) - Kieran David Evans
