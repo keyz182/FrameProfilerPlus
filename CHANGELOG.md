@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.1.0](https://github.com/keyz182/FrameProfilerPlus/compare/182bcc9ca90b8fdc89d2523c4924fa7b1793b789..v1.1.0) - 2026-11-12
+#### Features
+- explain row prefixes in a tooltip - ([182bcc9](https://github.com/keyz182/FrameProfilerPlus/commit/182bcc9ca90b8fdc89d2523c4924fa7b1793b789)) - Kieran David Evans
+
+- - -
+
 ## [v1.0.2](https://github.com/keyz182/FrameProfilerPlus/compare/eb348e0c47f5617f00dedb21672f436f3af24b48..v1.0.2) - 2026-11-12
 #### Bug Fixes
 Includes the fixes from v1.0.1, which was tagged but never released:
