@@ -74,7 +74,7 @@ namespace FrameProfilerPlus.UI
                 var entry = ScopeRuntime.Registry.Get(slot);
                 if ((entry.Kind != ScopeKind.HarmonyPatch && entry.Kind != ScopeKind.Transpiler) || entry.LabelId == LabelRegistry.Unassigned)
                     continue;
-                var id = new ProfilerLabelId((ushort)entry.LabelId);
+                var id = new ProfilerLabelId(entry.LabelId);
                 if (FrameProfiler.IsLabelMuted(id))
                     SumFor(byMod, ModOf(entry.LabelId), FrameProfiler.GetLabel(id)).muted = true;
             }

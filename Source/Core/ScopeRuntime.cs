@@ -27,7 +27,7 @@ namespace FrameProfilerPlus.Core
             if (!FrameProfiler.IsCapturing)
                 return false;
             var id = Registry.LabelIdFor(slot);
-            return id != LabelRegistry.Unassigned && FrameProfiler.TryEnterScope(new ProfilerLabelId((ushort)id));
+            return id != LabelRegistry.Unassigned && FrameProfiler.TryEnterScope(new ProfilerLabelId(id));
         }
 
         public static void Leave(bool entered)

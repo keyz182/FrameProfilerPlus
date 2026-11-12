@@ -115,7 +115,7 @@ namespace FrameProfilerPlus.Coverage
             var label = ScopeRuntime.Registry.Get(slot).LabelId;
             if (label != LabelRegistry.Unassigned && seen.Contains((label, appliedAt)))
                 return SeenState.Seen;
-            if (label != LabelRegistry.Unassigned && FrameProfiler.IsLabelMuted(new ProfilerLabelId((ushort)label)))
+            if (label != LabelRegistry.Unassigned && FrameProfiler.IsLabelMuted(new ProfilerLabelId(label)))
                 return SeenState.Muted;
             return newestOrdinal > appliedAt ? SeenState.NeverSeen : SeenState.NoFramesYet;
         }
