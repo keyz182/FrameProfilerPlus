@@ -70,6 +70,15 @@ namespace FrameProfilerPlus.Tests
         }
 
         [Fact]
+        public void StaleReferences_CountAsUnresolved()
+        {
+            Assert.True(ILScan.IsUnresolvable(new MissingMethodException("stale ProfilerLabelId.get_Value")));
+            Assert.True(ILScan.IsUnresolvable(new MissingFieldException()));
+            Assert.True(ILScan.IsUnresolvable(new TypeLoadException()));
+            Assert.False(ILScan.IsUnresolvable(new InvalidOperationException()));
+        }
+
+        [Fact]
         public void BodySize_IsZeroWithoutBody_AndPositiveWithOne()
         {
             Assert.True(ILScan.BodySize(M("Leaf")) > 0);

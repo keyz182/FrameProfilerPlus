@@ -28,7 +28,9 @@ namespace FrameProfilerPlus.Attribution
     }
 
     // Times Harmony patches from inside Harmony's replacement builder (0Harmony 3.0.0-rc.3 internals):
-    // - EmitPatchCall builds every prefix, postfix and finalizer call: each becomes an H: scope.
+    // - EmitPatchCall builds every prefix, postfix and finalizer call: each becomes an H: scope. From Harmony 3.0.3
+    //   EmitPatchCall is a thin wrapper that the JIT may inline into its callers, so the hook goes on
+    //   EmitPatchCallCore (the real builder) when it exists.
     // - CreateReplacement hands the finished replacement to EmitCodes: it becomes a P: scope, which restores the
     //   timing that vanilla instrumentation loses on a patched method and repairs zones a throwing patch left open.
     // - UpdateWrapper builds and detours one replacement: it carries the per-generation state and, if our IL
@@ -60,7 +62,8 @@ namespace FrameProfilerPlus.Attribution
 
         private static readonly Assembly Own = typeof(AttributionHooks).Assembly;
         private static readonly MethodInfo UpdateWrapper = AccessTools.Method("HarmonyLib.PatchFunctions:UpdateWrapper");
-        private static readonly MethodInfo EmitPatchCall = AccessTools.Method("HarmonyLib.MethodCreatorTools:EmitPatchCall");
+        private static readonly MethodInfo EmitPatchCall = AccessTools.Method("HarmonyLib.MethodCreatorTools:EmitPatchCallCore")
+            ?? AccessTools.Method("HarmonyLib.MethodCreatorTools:EmitPatchCall");
         private static readonly MethodInfo EmitCodes = AccessTools.Method("HarmonyLib.MethodCreatorTools:EmitCodes");
         private static readonly MethodInfo CreateReplacement = AccessTools.Method("HarmonyLib.MethodCreator:CreateReplacement");
         private static readonly FieldInfo[] PatchArrays = typeof(PatchInfo).GetFields(BindingFlags.Public | BindingFlags.Instance)

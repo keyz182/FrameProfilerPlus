@@ -67,13 +67,18 @@ namespace FrameProfilerPlus.Coverage
                 {
                     callees.Add(method.Module.ResolveMethod(token, typeArgs, methodArgs));
                 }
-                catch (Exception e) when (e is ArgumentException || e is BadImageFormatException || e is TypeLoadException || e is FileNotFoundException)
+                catch (Exception e) when (IsUnresolvable(e))
                 {
                     unresolved++;
                 }
             }
             return callees;
         }
+
+        // A token that names a method, field or type the loaded game no longer has. Mods built for an older
+        // game version carry these, so one stale mod must not stop a scan (MissingMethodException is a MissingMemberException).
+        internal static bool IsUnresolvable(Exception e) =>
+            e is ArgumentException || e is BadImageFormatException || e is TypeLoadException || e is FileNotFoundException || e is MissingMemberException;
 
         internal static IEnumerable<(int token, OpCode opcode)> CallTokens(byte[] il)
         {
