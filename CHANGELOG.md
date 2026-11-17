@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [v1.1.1](https://github.com/keyz182/FrameProfilerPlus/compare/bdce9a361a22754dfd22bff265fd34746989e5e1..v1.1.1) - 2026-11-17
+#### Bug Fixes
+- keep Harmony attribution and coverage working on Harmony 3.0.3 and stale mods - ([bdce9a3](https://github.com/keyz182/FrameProfilerPlus/commit/bdce9a361a22754dfd22bff265fd34746989e5e1)) - Kieran David Evans
+
+- - -
+
 ## [v1.1.0](https://github.com/keyz182/FrameProfilerPlus/compare/182bcc9ca90b8fdc89d2523c4924fa7b1793b789..v1.1.0) - 2026-11-12
 #### Features
 - explain row prefixes in a tooltip - ([182bcc9](https://github.com/keyz182/FrameProfilerPlus/commit/182bcc9ca90b8fdc89d2523c4924fa7b1793b789)) - Kieran David Evans
